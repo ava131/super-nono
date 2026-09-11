@@ -1,0 +1,19 @@
+# pnpm 11 起，包管理设置从 package.json 的 "pnpm" 字段搬到了这里。
+
+# 允许 electron 跑 postinstall（否则不会下载 Electron 二进制）
+onlyBuiltDependencies:
+  - electron
+
+# ── store 位置必须显式固定 ──────────────────────────────────────────
+# 原因：AI 侧的执行沙箱写不了全局 store（~/Library/pnpm/store），pnpm 会退化成
+# 项目内的 .pnpm-store；而普通终端默认用全局 store。两者解析出的 storeDir 不一致，
+# pnpm 就认为 node_modules 是"别的环境装的"，于是每次跑脚本都要求
+# 「removed and reinstalled from scratch」。
+# 固定成项目内相对路径后，任何环境解析结果都一样。
+storeDir: .pnpm-store
+
+# ── 关掉"运行脚本前校验依赖" ────────────────────────────────────────
+# storeDir 已消除根因；这里再关掉校验，避免它误判之后直接把 node_modules
+# （含手工装好的 Electron 二进制）整个删掉重建。依赖真的过期时手动跑
+# `pnpm install` 即可。
+verifyDepsBeforeRun: false

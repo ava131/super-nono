@@ -1,0 +1,18 @@
+{
+  "_note": "手工维护的价格表，用于估算费用。官方调价后这里会失真——估算仅供参考，不保证与账单一致。单位：元 / 百万 token。",
+  "_updatedAt": "2026-09",
+  "_source": "https://api-docs.deepseek.com/quick_start/pricing",
+  "currency": "CNY",
+  "models": {
+    "deepseek-chat": {
+      "inputPerM": 2.0,
+      "cacheHitPerM": 0.5,
+      "outputPerM": 8.0
+    },
+    "deepseek-reasoner": {
+      "inputPerM": 4.0,
+      "cacheHitPerM": 1.0,
+      "outputPerM": 16.0
+    }
+  }
+}

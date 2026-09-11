@@ -1,0 +1,25 @@
+{
+  "name": "super-nono",
+  "productName": "Super Nono",
+  "version": "0.1.0",
+  "private": true,
+  "description": "一只会思考的桌面像素桌宠（个人项目，与《赛尔号》/ 淘米无任何关联）",
+  "license": "MIT",
+  "type": "module",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --enable-logging",
+    "smoke": "electron . --smoke",
+    "check": "tsc --noEmit",
+    "test": "node --test \"test/**/*.test.js\"",
+    "skill:list": "node scripts/skill-test.js --list",
+    "skill:test": "node scripts/skill-test.js",
+    "electron:install": "bash scripts/install-electron.sh"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.2",
+    "electron": "44.3.0",
+    "typescript": "^7.0.2"
+  }
+}

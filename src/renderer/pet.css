@@ -1,0 +1,23 @@
+/* 宠物窗：整页透明，只有 canvas 上的像素是"实体" */
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 160px;
+  height: 160px;
+  overflow: hidden;
+  background: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: default;
+}
+
+#stage {
+  display: block;
+  width: 160px;
+  height: 160px;
+  /* 像素风：放大时不要插值，保持硬边 */
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}

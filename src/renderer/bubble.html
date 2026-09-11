@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;"
+    />
+    <title>NONO</title>
+    <link rel="stylesheet" href="bubble.css" />
+  </head>
+  <body>
+    <div class="panel">
+      <header class="bar">
+        <span class="dot" id="dot"></span>
+        <span class="title" id="title">NONO</span>
+        <button id="new-session" class="icon" type="button" aria-label="新建对话" title="新建对话">＋</button>
+        <button id="history" class="icon" type="button" aria-label="历史对话" title="历史对话">☰</button>
+        <button id="gear" class="icon" type="button" aria-label="设置" title="设置">⚙</button>
+        <button id="close" class="icon" type="button" aria-label="收起" title="收起">×</button>
+      </header>
+
+      <!-- ── 聊天（只放跟"这一段对话"直接相关的东西）────────── -->
+      <section id="view-chat" class="view">
+        <main id="messages" class="messages" aria-live="polite">
+          <div class="msg assistant">
+            <div class="bubble">嗯，我在。</div>
+          </div>
+        </main>
+
+        <!-- L2 确认：技能要动真格之前，必须先问过用户（PRD-Skill §4.2） -->
+        <div id="confirm-request" class="confirm-request" hidden>
+          <div class="cr-title">NONO 想做一件事，需要你点头</div>
+          <div class="cr-body" id="cr-body"></div>
+          <div class="cr-actions">
+            <button id="cr-deny" class="btn ghost small" type="button">不让</button>
+            <button id="cr-allow" class="btn danger small" type="button">让它做</button>
+          </div>
+        </div>
+
+        <footer class="composer">
+          <textarea
+            id="input"
+            class="input"
+            rows="1"
+            placeholder="说点什么…（Enter 发送，Shift+Enter 换行）"
+          ></textarea>
+          <button id="stop" class="btn stop" type="button" hidden>停止</button>
+          <button id="send" class="btn send" type="button">发送</button>
+        </footer>
+      </section>
+
+      <!-- ── 历史对话：会话级操作都在这里 ─────────────────── -->
+      <section id="view-history" class="view history" hidden>
+        <div class="history-head">
+          <span>历史对话</span>
+          <button id="history-new" class="btn ghost small" type="button">＋ 新建</button>
+        </div>
+        <div id="session-list" class="session-list"></div>
+        <p class="footnote">点一条切过去；右侧 ✎ 改名、🗑 删除。</p>
+      </section>
+
+      <!-- ── 设置：只放应用级配置 ────────────────────────── -->
+      <section id="view-settings" class="view settings" hidden>
+        <label class="field">
+          <span class="label">DeepSeek API Key</span>
+          <input id="set-apikey" class="input" type="password" placeholder="sk-…（留空则清除）" autocomplete="off" />
+          <span class="hint" id="key-hint">加密后存在本机钥匙串，不会外传。</span>
+        </label>
+
+        <label class="field">
+          <span class="label">模型</span>
+          <select id="set-model" class="input">
+            <option value="deepseek-chat">deepseek-chat（日常）</option>
+            <option value="deepseek-reasoner">deepseek-reasoner（慢且贵）</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span class="label">每日费用上限（元，0 = 不限）</span>
+          <input id="set-limit" class="input" type="number" min="0" step="1" />
+        </label>
+
+        <label class="field row">
+          <input id="set-offline" type="checkbox" />
+          <span>飞行模式（彻底断网，只保留本地能力）</span>
+        </label>
+
+        <div class="stat" id="stat-today">今天：—</div>
+
+        <div class="settings-actions">
+          <button id="save-settings" class="btn send" type="button">保存</button>
+        </div>
+
+        <p class="footnote">费用为估算值，随官方调价会失真，不保证与账单一致。</p>
+      </section>
+
+      <!-- 浮层提示：不管当前在哪个视图都能看见 -->
+      <div id="toast" class="toast" hidden></div>
+    </div>
+    <script type="module" src="bubble.js"></script>
+  </body>
+</html>

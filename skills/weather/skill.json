@@ -1,0 +1,25 @@
+{
+  "name": "weather",
+  "version": "0.1.0",
+  "description": "查询指定城市的实时天气与未来几天预报。当用户问某地天气、气温、下不下雨、要不要带伞、明天冷不冷时使用。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "city": {
+        "type": "string",
+        "description": "城市名，中英文均可，例如：上海 / 北京 / Tokyo"
+      },
+      "action": {
+        "type": "string",
+        "enum": ["now", "forecast"],
+        "description": "now = 当前实时天气；forecast = 未来三天预报"
+      }
+    },
+    "required": ["city", "action"]
+  },
+  "permissions": ["network:weather"],
+  "networkHosts": ["geocoding-api.open-meteo.com", "api.open-meteo.com", "wttr.in"],
+  "risk": "read_only",
+  "requiresConfirmation": false,
+  "timeoutMs": 10000
+}

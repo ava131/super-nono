@@ -1,0 +1,17 @@
+node_modules/
+dist/
+out/
+*.log
+.DS_Store
+
+# pnpm 在本机把 store 落在了项目内
+.pnpm-store/
+
+# 运行时数据不落仓库（真实数据在 ~/Library/Application Support/super-nono/）
+userdata/
+
+# Electron 二进制下载缓存（本机沙箱不允许写 ~/Library/Caches，故指到项目内）
+.electron-cache/
+
+# Chromium / Electron 的运行时残留（某些启动方式下会落在项目目录）
+Singleton*

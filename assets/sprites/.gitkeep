@@ -1,0 +1,2 @@
+v0 用 src/renderer/placeholder-art.js 程序化生成占位像素图，这里先空着。
+v1 换成真图集后，把 <状态名>.png + <状态名>.json 放进本目录即可，无需改代码。
