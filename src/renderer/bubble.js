@@ -35,6 +35,10 @@ const toastEl = el('toast');
 const viewChat = el('view-chat');
 const viewSettings = el('view-settings');
 const viewHistory = el('view-history');
+const viewWatchlist = el('view-watchlist');
+const watchlistList = el('watchlist-list');
+const watchlistBtn = /** @type {HTMLButtonElement} */ (el('watchlist-btn'));
+const watchlistRefresh = /** @type {HTMLButtonElement} */ (el('watchlist-refresh'));
 
 const setApiKey = /** @type {HTMLInputElement} */ (el('set-apikey'));
 const setModel = /** @type {HTMLSelectElement} */ (el('set-model'));
@@ -159,15 +163,18 @@ function acceptEvent(payload) {
 
 // ── 视图切换 ────────────────────────────────────────────────────────
 
-/** @param {'chat'|'settings'|'history'} which */
+/** @param {'chat'|'settings'|'history'|'watchlist'} which */
 function showView(which) {
   viewChat.hidden = which !== 'chat';
   viewSettings.hidden = which !== 'settings';
   viewHistory.hidden = which !== 'history';
+  viewWatchlist.hidden = which !== 'watchlist';
   gearEl.classList.toggle('active', which === 'settings');
   historyBtn.classList.toggle('active', which === 'history');
+  watchlistBtn.classList.toggle('active', which === 'watchlist');
 
   if (which === 'settings') void loadSettings();
+  if (which === 'watchlist') void renderWatchlist();
   else if (which === 'history') void renderSessions();
   else inputEl.focus();
 }
@@ -219,6 +226,72 @@ function formatWhen(ts) {
   const sameDay = d.toDateString() === new Date().toDateString();
   const p = (/** @type {number} */ n) => String(n).padStart(2, '0');
   return sameDay ? `${p(d.getHours())}:${p(d.getMinutes())}` : `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+// ── 自选股名单（零出网）─────────────────────────────────────────────
+
+/**
+ * 渲染自选名单。
+ *
+ * ⚠️ **只显示代码 + 名称**，不请求任何行情数据：
+ *   · 数据源挂掉 / 飞行模式下这个页面照样能用（MK18）
+ *   · 符合 PRD §8 收窄后的范围
+ *
+ * @typedef {{ symbol: string, code: string, name: string }} WatchItem
+ */
+async function renderWatchlist() {
+  const res = /** @type {{ ok?: boolean, items?: WatchItem[], error?: string }} */ (
+    /** @type {unknown} */ (await api.watchlistList())
+  );
+  watchlistList.replaceChildren();
+
+  const items = res.items ?? [];
+  if (items.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'footnote';
+    empty.textContent = '还没有自选。在对话里说「把茅台加进自选」就行。';
+    watchlistList.append(empty);
+    return;
+  }
+
+  for (const it of items) {
+    const row = document.createElement('div');
+    row.className = 'session-row';
+
+    const main = document.createElement('div');
+    main.className = 'session-main';
+    const name = document.createElement('div');
+    name.className = 'session-title';
+    name.textContent = it.name;
+    const code = document.createElement('div');
+    code.className = 'session-sub';
+    code.textContent = it.code;
+    main.append(name, code);
+
+    // 每行一个删除按钮 —— 这就是 L1.5「不弹确认框」的**事后纠正**手段
+    const del = makeButton('🗑', 'icon', `从自选里删掉 ${it.name}`, () => {
+      void removeFromWatchlist(it);
+    });
+
+    row.append(main, del);
+    watchlistList.append(row);
+  }
+}
+
+/**
+ * 从自选里删一支，然后就地重绘。
+ * @param {WatchItem} it
+ */
+async function removeFromWatchlist(it) {
+  const res = /** @type {{ ok?: boolean, items?: WatchItem[], error?: string }} */ (
+    /** @type {unknown} */ (await api.watchlistRemove(it.symbol))
+  );
+  if (res.ok === false) {
+    showToast(res.error ?? '删除失败', 'error');
+    return;
+  }
+  showToast(`已移除 ${it.name}`);
+  await renderWatchlist();
 }
 
 async function renderSessions() {
@@ -466,6 +539,8 @@ newSessionBtn.addEventListener('click', () => void doNewSession());
 historyNewBtn.addEventListener('click', () => void doNewSession());
 historyBtn.addEventListener('click', () => showView(viewHistory.hidden === true ? 'history' : 'chat'));
 gearEl.addEventListener('click', () => showView(viewSettings.hidden === true ? 'settings' : 'chat'));
+watchlistBtn.addEventListener('click', () => showView(viewWatchlist.hidden === true ? 'watchlist' : 'chat'));
+watchlistRefresh.addEventListener('click', () => { void renderWatchlist(); });
 closeEl.addEventListener('click', () => api.toggleBubble(false));
 
 // ── 其它事件 ────────────────────────────────────────────────────────
@@ -492,7 +567,9 @@ window.addEventListener('keydown', (event) => {
     paintSessions();
     return;
   }
-  if (viewSettings.hidden !== true || viewHistory.hidden !== true) showView('chat');
+  if (viewSettings.hidden !== true || viewHistory.hidden !== true || viewWatchlist.hidden !== true) {
+    showView('chat');
+  }
   else api.toggleBubble(false);
 });
 window.addEventListener('focus', () => {

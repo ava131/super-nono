@@ -14,6 +14,7 @@ import { openHint } from './brain/status.js';
 import * as usage from './brain/usage.js';
 import * as registry from './skills/registry.js';
 import * as runner from './skills/runner.js';
+import { readNamespaceValue, writeNamespaceValue } from './skills/store.js';
 import * as settings from './store/settings.js';
 import { getBubbleWindow } from './window.js';
 import * as pet from './window.js';
@@ -136,6 +137,7 @@ async function handleUserMessage(text) {
       },
       tools: {
         skills: registry.describeAll(),
+        skillConstraints: () => registry.describeConstraints(registry.describeAll()),
         toolSpecs: registry.toolSpecs,
         runTool: (name, args, ctx) => runner.run(name, args, ctx),
       },
@@ -309,6 +311,66 @@ export function registerIpc() {
     }
     const ok = memory.renameSession(id, title);
     return { ok, sessions: memory.listSessions(), error: ok ? undefined : '标题不能为空' };
+  });
+
+  // ── 自选股名单（PRD-market §8）────────────────────────────────────
+  //
+  // ⚠️ **零出网**：只读本地 `skill_kv`，不碰任何行情接口。
+  // 所以数据源全挂、或用户开着飞行模式时，**自选名单照样能用**（MK18）。
+  //
+  // 这也是"结果可见 + 每行可删"这条安全网的落点 ——
+  // 因为加自选是 L1.5（不弹确认框），用户只能靠**事后**看到并纠正（评审决定 3）。
+
+  /**
+   * 读自选股名单，只保留渲染进程需要的三个字段。
+   *
+   * 坏数据一律过滤掉 —— 库里可能有旧版本写下的畸形条目（或被人手改过），
+   * 不该让它们进到界面。
+   *
+   * @returns {{ symbol: string, code: string, name: string }[]}
+   */
+  const readWatchlist = () => {
+    const raw = readNamespaceValue('watchlist', 'items');
+    if (!Array.isArray(raw)) return [];
+    /** @type {{ symbol: string, code: string, name: string }[]} */
+    const out = [];
+    for (const e of /** @type {any[]} */ (raw)) {
+      if (e && typeof e.symbol === 'string' && typeof e.code === 'string' && typeof e.name === 'string') {
+        out.push({ symbol: e.symbol, code: e.code, name: e.name });
+      }
+    }
+    return out;
+  };
+
+  ipcMain.handle(CH.WATCHLIST_LIST, () => ({ ok: true, items: readWatchlist() }));
+
+  /**
+   * 从名单里删一支 —— **由用户点按钮触发**，不是模型调用。
+   *
+   * 直接删 `skill_kv` 而不是绕 `runner.run('watchlist', {action:'remove'})`：
+   * 这是**用户界面动作**，不该受模型工具链的超时/确认/归一化影响。
+   * 风险也低 —— 它只是删一行，而且用户刚在界面上看着它。
+   */
+  ipcMain.handle(CH.WATCHLIST_REMOVE, (_event, payload) => {
+    const { symbol } = asObject(payload);
+    if (typeof symbol !== 'string' || symbol === '') {
+      return { ok: false, error: '缺少股票代码' };
+    }
+    const items = readWatchlist();
+    const next = items.filter((e) => e.symbol !== symbol);
+    if (next.length === items.length) {
+      return { ok: false, error: '这一支已经不在自选里了' };
+    }
+    try {
+      // 这里是**主进程代用户操作**，用底层写入原语，并在日志里留痕便于审计
+      // （为什么不让技能去删：见 store.js 的 writeNamespaceValue 说明）
+      writeNamespaceValue('watchlist', 'items', next);
+      log.info('watchlist.removed', { symbol, left: next.length });
+      return { ok: true, items: next };
+    } catch (err) {
+      log.warn('watchlist.removeFailed', { symbol, message: String(err) });
+      return { ok: false, error: '删除失败，过会儿再试' };
+    }
   });
 
   log.info('ipc.registered');

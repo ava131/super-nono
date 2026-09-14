@@ -59,3 +59,15 @@ test('白名单自身不重复', () => {
     assert.equal(new Set(list).size, list.length, `${name} 内部有重复项`);
   }
 });
+
+// ---------------------------------------------------------------- 自选股频道
+
+test('自选股频道已进 invoke 白名单（PRD-market §8）', () => {
+  assert.ok(INVOKE_CHANNELS.includes(CH.WATCHLIST_LIST));
+  assert.ok(INVOKE_CHANNELS.includes(CH.WATCHLIST_REMOVE));
+});
+
+test('自选股频道名遵循 域:动作 约定', () => {
+  assert.equal(CH.WATCHLIST_LIST, 'watchlist:list');
+  assert.equal(CH.WATCHLIST_REMOVE, 'watchlist:remove');
+});

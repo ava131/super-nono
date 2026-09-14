@@ -18,9 +18,16 @@ import log from '../log.js';
 import * as egress from './egress.js';
 import * as registry from './registry.js';
 import { RISK_TO_LEVEL, validateArgs } from './schema.js';
+import * as LIMITS from '../../../shared/limits.js';
+import { createSkillStore, readNamespaceValue } from './store.js';
 
-/** summary 的上限：给模型看的文本必须短，否则第二次请求会被撑爆（B-6d） */
-export const SUMMARY_LIMIT = 800;
+/**
+ * summary 的上限：给模型看的文本必须短，否则第二次请求会被撑爆（B-6d）。
+ *
+ * ⚠️ 值与 `skills/market/snapshot.js` **共用同一个定义**（`shared/limits.js`）。
+ * 两边各写一份的话，排版以为能放 800、实际被截到别的数 —— 用户会看到**残缺数据而无提示**。
+ */
+export const SUMMARY_LIMIT = LIMITS.SUMMARY_LIMIT;
 
 /** 确认请求的超时：超时按"拒绝"处理，绝不放行 */
 export const CONFIRM_TIMEOUT_MS = 30000;
@@ -70,13 +77,11 @@ export function checkPermissions(manifest) {
  *
  * @param {string} name
  * @param {unknown} rawArgs 模型给的参数（不可信）
- * @param {object} [ctx]
- * @param {AbortSignal} [ctx.signal]
- * @param {(req: { skill: string, args: Record<string, unknown>, level: string }) => Promise<boolean>} [ctx.requestConfirmation]
+ * @param {{ signal?: AbortSignal,
+ *           requestConfirmation?: (req: { skill: string, args: Record<string, unknown>, level: string }) => Promise<boolean> }} [ctx]
  * @returns {Promise<RunResult>}
  */
-export async function run(name, rawArgs, ctx = {}) {
-  const startedAt = Date.now();
+export async function run(name, rawArgs, ctx = {}) {  const startedAt = Date.now();
 
   // ① 存在？
   const skill = registry.get(name);
@@ -132,7 +137,25 @@ export async function run(name, rawArgs, ctx = {}) {
   // ⑥ 执行 + 超时
   // 技能只能通过注入的 safeFetch 出网 —— 白名单与飞行模式在那一层强制，
   // 技能自己碰不到裸 fetch（结构上的保证，不靠技能自觉）。
-  const fullCtx = { ...ctx, safeFetch: egress.safeFetch, skillName: name };
+  //
+  // store 同理：技能拿不到裸 SQL，只能用命名空间隔离的 ctx.store，
+  // 且**写权限按 risk 在 store 内部强制**（read_only 技能调 set 会抛 PERMISSION）。
+  /** @type {Record<string, unknown>} */
+  const fullCtx = {
+    ...ctx,
+    safeFetch: egress.safeFetch,
+    store: createSkillStore(name, manifest),
+    skillName: name,
+    skillRisk: manifest.risk,
+  };
+
+  // 跨技能数据：market.scan 需要 watchlist 的自选股名单。
+  // 用**显式的只读原语**读出来再注入，而不是放宽 ctx.store 的隔离
+  // （理由见 store.js 的 readNamespaceValue 说明）。
+  if (name === 'market') {
+    const items = readNamespaceValue('watchlist', 'items');
+    fullCtx.watchlistItems = Array.isArray(items) ? items : [];
+  }
 
   let result;
   try {

@@ -250,7 +250,7 @@ super-nono/
 
 | PRD 需求 | 实现文件 | 具体做什么 |
 |---|---|---|
-| B-1 模型适配层 | `src/main/brain/provider.js` | 封装 `openai` SDK；`baseURL`→DeepSeek；流式迭代器；tools 透传；AbortSignal |
+| B-1 模型适配层 | `src/main/brain/provider.js` + `sse.js` | **手写客户端（不用 `openai` SDK）**：`baseURL`→DeepSeek；`streamChat()` 返回事件流；`sse.js` 为可单测的纯函数式 SSE 解码；出网统一走 `safeFetch`；AbortSignal |
 | B-2 会话循环 | `src/main/brain/agent.js` | 组装上下文 → 请求 → 解析工具调用 → 执行 → 回填 → 再请求；步数上限 5、超时、取消、失败熔断 |
 | B-3 人格 | `persona.js` + `assets/persona.md` | 装载人格文本，**提供一字不变的稳定前缀** |
 | **B-3.1 时间注入** | `src/main/brain/agent.js` | **时间不进 system message**，拼在本轮 user 消息前：`[现在是 ...] <原话>` |
@@ -266,8 +266,8 @@ super-nono/
 | PRD 需求 | 实现文件 | 具体做什么 |
 |---|---|---|
 | §3 技能契约 | `skills/weather/skill.json` | 声明 description、参数 Schema、**仅 `network:weather` 一项权限**、risk、networkHosts |
-| §3.3 执行器契约 | `skills/weather/index.js` | `run(args, ctx)`：zod 校验 → **内存缓存** → 地理编码 → 查天气 → 组装 summary |
-| §3.2/3.3 契约自检 | `src/main/skills/registry.js` | 启动扫描 `skills/`、zod 校验声明、生成工具清单、打印权限与域名并集 |
+| §3.3 执行器契约 | `skills/weather/index.js` | `run(args, ctx)`：**`validateArgs` 校验（手写校验器）** → **内存缓存** → 地理编码 → 查天气 → 组装 summary |
+| §3.2/3.3 契约自检 | `src/main/skills/registry.js` + `schema.js` | 启动扫描 `skills/`、**`validateManifest` 校验声明（手写校验器，非 zod）**、生成工具清单、打印权限与域名并集 |
 | §4.1 权限闸门 | `src/main/skills/runner.js` | **未声明即拒绝**（无"默认允许"项），返回结构化错误 |
 | §4.2 三级风险 | `runner.js` + `bubble.js` | L1 直接执行；L2 经 `brain:confirmRequest` 弹窗等待确认（**v0 不记忆确认结果**）；L3 代码层硬拒绝 |
 | §4.3 出网白名单 | `src/main/skills/egress.js` | 白名单由 registry 汇总注入；`safeFetch` 强制校验 |
@@ -289,7 +289,7 @@ const petWindow = new BrowserWindow({
   frame: false,
   hasShadow: false,
   resizable: false,
-  movable: false,                   // ⚠️ 拖动由我们自己实现；见下方风险项
+  movable: false,                   // ✅ 已实测：该设置下主进程 setPosition() 仍生效（§10.1）
   minimizable: false, maximizable: false, fullscreenable: false,
   focusable: false,                 // 宠物窗不需要键盘焦点
   skipTaskbar: true,
@@ -488,7 +488,7 @@ async function runTurn(userText, emit, signal) {
 // registry.js：启动时扫描（ESM 动态导入）
 for (const dir of await readdir(SKILLS_DIR)) {
   const decl = JSON.parse(await readFile(`${SKILLS_DIR}/${dir}/skill.json`));
-  const parsed = SkillSchema.parse(decl);          // zod 校验，非法则禁用并告警
+  const parsed = validateManifest(decl, dir);      // 手写校验器，非法则禁用并告警
   const mod = await import(`${SKILLS_DIR}/${dir}/index.js`);   // ★ ESM 动态 import
   registry.set(parsed.name, { decl: parsed, run: mod.run });
   egress.addHosts(parsed.networkHosts ?? []);      // 白名单只会变宽，不会变窄
@@ -502,7 +502,7 @@ for (const dir of await readdir(SKILLS_DIR)) {
 3. risk === 'irreversible'   → 硬拒绝（L3 红线）
 4. requiresConfirmation      → 发 brain:confirmRequest，等待用户（超时=拒绝）
                                ★ v0 不记忆确认结果，每次都问
-5. zod 校验参数              → 失败直接返回，不执行
+5. 参数校验（`validateArgs`）  → 失败直接返回，不执行
 6. 带超时执行 run(args, ctx)
 7. 归一化结果：{ ok, summary(≤800), data }
 ```
@@ -547,7 +547,14 @@ async function safeFetch(url, opts = {}) {
 
 ### 6.10 存储层（B-4/B-6）
 
-**Plan A：SQLite（`better-sqlite3`）**
+**SQLite（`node:sqlite`，Node 内置）**
+
+> **v0.3 起已无 Plan A / Plan B 之分**：存储统一用 Node 内置 `node:sqlite`。
+> 原 `better-sqlite3`（C++ 原生模块，需为 Electron ABI 重建）与 JSONL 降级预案**均已淘汰**，
+> 该工程风险随之消失（见 §2.1 选型表、§2.2 被否决方案、changelog v0.3）。
+> `node:sqlite` 支持 WAL —— 2026-09-14 实测 `journal_mode` 可由 `delete` 切换为 `wal`。
+>
+> 实现落点：`src/main/store/db.js`（`import { DatabaseSync } from 'node:sqlite'`）。
 
 ```sql
 CREATE TABLE IF NOT EXISTS sessions (
@@ -575,10 +582,7 @@ CREATE TABLE IF NOT EXISTS usage_log (
 - **归档**：每月 `VACUUM`；v0 数据量极小，可先只做 `VACUUM`，暂不做历史归档。
 - **v1+ 预留但 v0 不建**：`memories`、`tasks`、`cache_market`（以注释形式保留位置）。
 - **v0 天气缓存不落库**：走主进程内存 `Map` + TTL（C-3 修订），因此 weather 不需要 `db:cache` 权限。
-
-**Plan B：JSONL 文件（`store/files.js`）**
-若 `better-sqlite3` 的 Electron ABI 重建反复出问题，切到 `messages.jsonl` 追加写 + 启动时读入内存。
-**代价可控**：v0 数据量极小，功能完全不受影响。这是明确写进 PRD 的降级预案。
+- **技能的持久化**：走通用表 `skill_kv`（namespace 隔离），由 `ctx.store` 注入 —— 见 market 方案 `docs/market/SDD-market-v0.md` §3.1/§6.1。
 
 ### 6.11 日志与环形缓冲（B-7）
 
@@ -663,7 +667,7 @@ function placeBubble() {
    │     ├─ runner.run("weather", args, { turnId, signal })
    │     │     ├─ 权限检查：network:weather ✅
    │     │     ├─ risk=read_only → 不弹确认
-   │     │     ├─ zod 校验参数 ✅
+   │     │     ├─ 参数校验（validateArgs）✅
    │     │     ├─ 内存缓存未命中 → safeFetch
    │     │     │     ├─→ geocoding-api.open-meteo.com   ★出网②（白名单）
    │     │     │     └─→ api.open-meteo.com             ★出网③（白名单）
@@ -691,7 +695,7 @@ function placeBubble() {
 
 | 包 | 用途 |
 |---|---|
-| **（无）** | 🎉 **v0 的运行时依赖为零** —— 除 Electron 本身外不装任何包。存储用 Node 内置 `node:sqlite`，模型客户端手写，参数校验（zod）到 M3 接技能时再评估 |
+| **（无）** | 🎉 **v0 的运行时依赖为零** —— 除 Electron 本身外不装任何包。存储用 Node 内置 `node:sqlite`，模型客户端手写（`fetch` + SSE），参数校验用**手写校验器 `src/main/skills/schema.js`**（M3 已落地，替代原计划的 zod） |
 
 > 这提前达成了 `PRD-Skill-v0.md` AS15「零依赖」的验收目标。
 
@@ -706,9 +710,9 @@ function placeBubble() {
 
 ### 8.3 版本策略
 
-- `electron`、`better-sqlite3`、`openai` **锁定精确版本**（不用 `^`），因为 ABI 与接口强耦合。
+- **`electron` 锁定精确版本**（不用 `^`）——它是唯一的运行时本体，版本变更影响面最大。
+- **已无原生模块需要关心**：存储用 Node 内置 `node:sqlite`（无 ABI 耦合），模型客户端手写。因此**不再需要 `@electron/rebuild` 与 `postinstall` 重建**。
 - 其余用 `^` 即可。
-- `postinstall` 执行 `electron-rebuild`，避免"升级 Electron 后 SQLite 崩"。
 - 用 `fnm` + `.node-version` 锁定 Node，防止未来的自己被 Node 升级搞坏。
 
 ### 8.4 v0 依赖目标
@@ -809,9 +813,9 @@ function placeBubble() {
 
 | 风险 | 触发信号 | 备选方案 |
 |---|---|---|
-| **accessory 模式下气泡窗拿不到键盘焦点** | M2 实测发现打不了字 | 调整激活策略（如气泡显示时临时 `app.dock.show()`、或改窗口 `level`/`acceptsFirstResponder`）；实在不行回退方案 A。**M2 第一小时必须验证** |
-| **`movable: false` 与 `setPosition` 不兼容** | 拖动无响应 | 开 `movable: true` 并改为在渲染层用无边框拖动 |
-| `better-sqlite3` ABI 重建失败 | 启动报 `NODE_MODULE_VERSION` 不匹配 | **Plan B：切 JSONL 文件存储**（§6.10），功能不受影响 |
+| ~~accessory 模式下气泡窗拿不到键盘焦点~~ | — | ✅ **已实测通过**（M2；`PRD-Body` changelog v0.3）。**风险已闭环，从风险表移除** |
+| ~~`movable: false` 与 `setPosition` 不兼容~~ | — | ✅ **已实测通过**（本文件 §10.1："⭐ `movable: false` 下 `setPosition()` 生效"）。**风险已闭环，从风险表移除** |
+| ~~`better-sqlite3` ABI 重建失败~~ | **该风险已消失** | v0.3 改用 Node 内置 `node:sqlite`，无原生模块、无 ABI 耦合、无重建步骤（§6.10） |
 | Electron 透明窗口在 macOS 更新后异常 | 窗口黑底 / 不置顶 | 调整置顶层级；必要时降级为"半透明圆角窗" |
 | 命中测试抖动 | 边缘闪烁、拖不动 | 已内置滞回阈值；进一步加大阈值或引入 3 帧确认 |
 | 中文城市地理编码识别差 | 查"上海"报找不到 | 启用 `city-fallback.js` 内置常用城市经纬度表前置匹配 |

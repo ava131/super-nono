@@ -15,7 +15,8 @@
     "test": "node --test \"test/**/*.test.js\"",
     "skill:list": "node scripts/skill-test.js --list",
     "skill:test": "node scripts/skill-test.js",
-    "electron:install": "bash scripts/install-electron.sh"
+    "electron:install": "bash scripts/install-electron.sh",
+    "market:capture": "node scripts/capture-eastmoney-kline.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.20.2",

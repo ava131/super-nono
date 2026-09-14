@@ -82,6 +82,8 @@ function subscribe(channel, handler) {
  * @property {(keys: string[]) => Promise<unknown>} settingsGet
  * @property {(key: string, value: unknown) => Promise<unknown>} settingsSet
  * @property {(limit?: number) => Promise<unknown>} historyRecent
+ * @property {() => Promise<unknown>} watchlistList
+ * @property {(symbol: string) => Promise<unknown>} watchlistRemove
  * @property {() => Promise<unknown>} sessionList
  * @property {() => Promise<unknown>} sessionNew
  * @property {(id: string) => Promise<unknown>} sessionSwitch
@@ -120,6 +122,8 @@ const api = {
   sessionSwitch: (id) => invoke(CH.SESSION_SWITCH, { id }),
   sessionDelete: (id) => invoke(CH.SESSION_DELETE, { id }),
   sessionRename: (id, title) => invoke(CH.SESSION_RENAME, { id, title }),
+  watchlistList: () => invoke(CH.WATCHLIST_LIST, {}),
+  watchlistRemove: (symbol) => invoke(CH.WATCHLIST_REMOVE, { symbol }),
 
   // ── 订阅主进程 ────────────────────────────────────────────────
   onState: (fn) => subscribe(CH.BRAIN_STATE, fn),

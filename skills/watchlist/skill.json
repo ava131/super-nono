@@ -1,0 +1,25 @@
+{
+  "name": "watchlist",
+  "version": "0.1.0",
+  "description": "管理用户的自选股列表：添加、删除、列出。当用户说「把茅台加进自选」「删掉宁德时代」「我自选里都有什么」时使用。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "type": "string",
+        "enum": ["add", "remove", "list"],
+        "description": "add = 加入自选；remove = 从自选移除；list = 列出全部自选"
+      },
+      "symbol": {
+        "type": "string",
+        "description": "股票名称或 6 位代码，如 茅台 / 600519。action=list 时不需要。"
+      }
+    },
+    "required": ["action"]
+  },
+  "permissions": ["db:cache"],
+  "networkHosts": [],
+  "risk": "local_reversible",
+  "requiresConfirmation": false,
+  "timeoutMs": 5000
+}

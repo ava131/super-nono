@@ -6,13 +6,25 @@
  * 纯函数、无副作用，可直接单测（见 test/unit/schema.test.js）。
  */
 
-/** 风险等级 → 三级闸门（PRD-Skill v0.1 §4.2） */
+/** 风险等级 → 闸门档位（PRD-Skill §4.2 + 评审决定 3 新增 L1.5） */
 export const RISK_TO_LEVEL = Object.freeze({
   read_only: 'L1',
+  // L1.5：只写本技能 ctx.store + 存在反向操作 + 不外发写入 → 直接执行，不弹框
+  local_reversible: 'L1.5',
   local_write: 'L2',
   external_send: 'L2',
   irreversible: 'L3',
 });
+
+/**
+ * 需要用户**事前确认**的档位。
+ *
+ * ⚠️ **L1.5 明确不在其中** —— 这是有意的：
+ * "加一支自选股"每次都弹确认框会训练用户闭眼点"允许"，
+ * 等真正危险的操作出现时用户已经不会看了（**反而降低安全性**）。
+ * L1.5 的替代安全网是"**结果可见 + 每行可删**"。
+ */
+const LEVELS_REQUIRING_CONFIRMATION = Object.freeze(['L2', 'L3']);
 
 export const RISK_VALUES = Object.freeze(Object.keys(RISK_TO_LEVEL));
 
@@ -27,7 +39,7 @@ const NAME_RE = /^[a-z][a-z0-9_]{1,31}$/;
  * @property {string} description
  * @property {Record<string, unknown>} parameters
  * @property {string[]} permissions
- * @property {'read_only'|'local_write'|'external_send'|'irreversible'} risk
+ * @property {'read_only'|'local_reversible'|'local_write'|'external_send'|'irreversible'} risk
  * @property {boolean} requiresConfirmation
  * @property {number} timeoutMs
  * @property {string[]} networkHosts
@@ -90,12 +102,24 @@ export function validateManifest(raw, source = '') {
   }
 
   // requiresConfirmation
+  //
+  // 规则（评审 C-2 修订）：**L2 / L3 必须确认；L1.5 不得要求确认**。
+  // 原规则是"非 read_only 必须确认"，那会让 L1.5（加自选）每次弹框 —— 与决定 3 冲突。
   const needsConfirm = m.requiresConfirmation;
+  const level =
+    typeof risk === 'string' && RISK_VALUES.includes(risk)
+      ? RISK_TO_LEVEL[/** @type {keyof typeof RISK_TO_LEVEL} */ (risk)]
+      : undefined;
+  const mustConfirm = level !== undefined && LEVELS_REQUIRING_CONFIRMATION.includes(level);
   if (typeof needsConfirm !== 'boolean') {
     errors.push(`${where}requiresConfirmation 必填，且必须是布尔值`);
-  } else if (risk !== 'read_only' && needsConfirm !== true) {
-    // 非只读操作必须确认，这是硬约束（PRD-Skill §3.2）
-    errors.push(`${where}risk=${String(risk)} 的技能必须 requiresConfirmation: true`);
+  } else if (mustConfirm && needsConfirm !== true) {
+    errors.push(`${where}risk=${String(risk)}（${level}）的技能必须 requiresConfirmation: true`);
+  } else if (level === 'L1.5' && needsConfirm === true) {
+    errors.push(
+      `${where}risk=local_reversible（L1.5）不得要求确认：` +
+        '它会训练用户盲目点"允许"，反而降低安全性。安全网是"结果可见 + 每行可删"。',
+    );
   }
 
   // timeoutMs

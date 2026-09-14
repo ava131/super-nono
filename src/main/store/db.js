@@ -50,6 +50,17 @@ CREATE TABLE IF NOT EXISTS usage_log (
 );
 CREATE INDEX IF NOT EXISTS idx_usage_created ON usage_log(created_at);
 
+-- 技能持久化（SDD-market §6.1）：命名空间隔离的通用 KV。
+-- 技能通过 ctx.store 访问（见 src/main/skills/store.js），拿不到裸 SQL。
+-- 写权限由 createSkillStore 的运行时闸门控制（read_only 技能不许写）。
+CREATE TABLE IF NOT EXISTS skill_kv (
+  namespace  TEXT    NOT NULL,
+  key        TEXT    NOT NULL,
+  value      TEXT    NOT NULL,
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (namespace, key)
+);
+
 -- v1+ 预留（v0 不创建）：memories / tasks / cache_market
 `;
 

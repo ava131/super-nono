@@ -1,0 +1,29 @@
+{
+  "name": "market",
+  "version": "0.1.0",
+  "description": "查询 A 股的行情与状态（只读）。当用户问某只股票现在什么情况、涨跌、均线、RSI、MACD、处于高位还是低位、或者问「我自选股都怎么样了」时使用。只给客观数据与历史分位，不给买卖建议。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "type": "string",
+        "enum": ["quote", "overview", "scan"],
+        "description": "quote = 轻量报价；overview = 完整状况说明书（推荐）；scan = 批量扫全部自选股"
+      },
+      "symbol": {
+        "type": "string",
+        "description": "股票名称或 6 位代码，如 茅台 / 600519。action=scan 时忽略此项。"
+      }
+    },
+    "required": ["action"]
+  },
+  "permissions": ["network:market", "db:cache"],
+  "networkHosts": [
+    "push2his.eastmoney.com",
+    "searchapi.eastmoney.com",
+    "query1.finance.yahoo.com"
+  ],
+  "risk": "read_only",
+  "requiresConfirmation": false,
+  "timeoutMs": 45000
+}

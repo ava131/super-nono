@@ -14,6 +14,7 @@
       <header class="bar">
         <span class="dot" id="dot"></span>
         <span class="title" id="title">NONO</span>
+        <button id="watchlist-btn" class="icon" type="button" aria-label="自选股" title="自选股">☆</button>
         <button id="new-session" class="icon" type="button" aria-label="新建对话" title="新建对话">＋</button>
         <button id="history" class="icon" type="button" aria-label="历史对话" title="历史对话">☰</button>
         <button id="gear" class="icon" type="button" aria-label="设置" title="设置">⚙</button>
@@ -48,6 +49,22 @@
           <button id="stop" class="btn stop" type="button" hidden>停止</button>
           <button id="send" class="btn send" type="button">发送</button>
         </footer>
+      </section>
+
+      <!-- ── 自选股：**零出网**，只读本地名单（PRD-market §8）─────────
+           刻意只显示"代码 + 名称"：
+             · 不请求行情 → 数据源挂掉 / 飞行模式下这个页面照样能用
+             · 每行可删 → 这是 L1.5「不弹确认框」之后唯一的事后纠正手段 -->
+      <section id="view-watchlist" class="view watchlist" hidden>
+        <div class="history-head">
+          <span>我的自选</span>
+          <button id="watchlist-refresh" class="btn ghost small" type="button">刷新</button>
+        </div>
+        <div id="watchlist-list" class="session-list"></div>
+        <p class="footnote">
+          只显示名称和代码，不占流量也不联网。<br />
+          想看某只的状态，回对话里问一句就行。
+        </p>
       </section>
 
       <!-- ── 历史对话：会话级操作都在这里 ─────────────────── -->

@@ -565,3 +565,13 @@ select.input {
   color: #5d7690;
   font-size: 12px;
 }
+
+/* ── 自选股名单（PRD-market §8）────────────────────────────────────
+   复用 .session-row / .session-main 的排版，这里只补视图自身的间距。
+   刻意**不**给行情数据留位置 —— 这个页面不联网。 */
+.watchlist .session-list {
+  padding: 4px 8px;
+}
+.watchlist .session-row {
+  cursor: default; /* 整行不可点：这一行没有"切换"语义，只有右侧的删除 */
+}

@@ -44,9 +44,23 @@ test('parameters 必须是 object 型 schema', () => {
 test('risk 取值受限', () => {
   assert.equal(validateManifest(base({ risk: 'whatever' })).ok, false);
   for (const risk of Object.keys(RISK_TO_LEVEL)) {
-    const needsConfirm = risk !== 'read_only';
+    // L1.5 是唯一"不得要求确认"的非只读档位（评审决定 3）
+    const needsConfirm = risk !== 'read_only' && risk !== 'local_reversible';
     assert.equal(validateManifest(base({ risk, requiresConfirmation: needsConfirm })).ok, true, risk);
   }
+});
+
+test('L1.5（local_reversible）不得要求确认 —— 否则会训练用户盲点"允许"', () => {
+  const r = validateManifest(base({ risk: 'local_reversible', requiresConfirmation: true }));
+  assert.equal(r.ok, false);
+  assert.match(r.errors.join(' '), /不得要求确认/);
+});
+
+test('L1.5 不要求确认时通过，且档位是 L1.5', () => {
+  const r = validateManifest(base({ risk: 'local_reversible', requiresConfirmation: false }));
+  assert.equal(r.ok, true);
+  if (!r.ok) return;
+  assert.equal(RISK_TO_LEVEL[r.value.risk], 'L1.5');
 });
 
 test('非只读技能必须 requiresConfirmation: true（硬约束）', () => {

@@ -14,6 +14,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { marketSystemBlock } from '../../../skills/market/prompts.js';
 import log from '../log.js';
 import * as egress from './egress.js';
 import { validateManifest } from './schema.js';
@@ -164,6 +165,42 @@ export function toolSpecs() {
 export function describeAll() {
   return list().map(({ manifest }) => ({ name: manifest.name, description: manifest.description }));
 }
+
+/**
+ * 各技能的**系统提示词追加块**（顺序与传入的技能清单一致）。
+ *
+ * ## 为什么由注册表提供，而不是让 persona 去查
+ *
+ * 注册表是**唯一知道"有哪些技能"**的地方。让它把提示词块备好，
+ * `persona.stablePrefix()` 就只需要接收一个字符串数组 ——
+ * 于是 Brain 层不必知道 `skills/` 的目录结构，也不必为新增技能改代码。
+ *
+ * ## ⚠️ 返回值必须**只依赖技能名**
+ *
+ * 这些内容会拼进 system 消息，任何时间/随机成分都会让 DeepSeek 的
+ * 前缀缓存失效（PRD-Brain §B-6e）。
+ *
+ * @param {{ name: string }[]} skills `describeAll()` 的结果（决定顺序）
+ * @returns {string[]}
+ */
+export function describeConstraints(skills) {
+  return skills.map((s) => SKILL_PROMPT_BLOCKS[s.name]?.() ?? '');
+}
+
+/**
+ * 技能名 → 提示词块工厂。
+ *
+ * 只有需要额外行为约束的技能才登记在这里（目前只有 `market` ——
+ * 它必须被**明确禁止给买卖建议**）。
+ *
+ * 将来技能变多时，应改为"技能目录里放一个 prompt 文件、由 registry 读取并校验"；
+ * **现在只有一个消费者，过早抽象只会多一层间接**。
+ *
+ * @type {Record<string, () => string>}
+ */
+const SKILL_PROMPT_BLOCKS = {
+  market: () => marketSystemBlock(),
+};
 
 /** @returns {string[]} */
 export function allPermissions() {

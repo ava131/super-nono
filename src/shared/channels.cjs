@@ -38,6 +38,8 @@
  * @property {string} SESSION_SWITCH
  * @property {string} SESSION_DELETE
  * @property {string} SESSION_RENAME
+ * @property {string} WATCHLIST_LIST
+ * @property {string} WATCHLIST_REMOVE
  */
 
 /** @type {Readonly<Channels>} */
@@ -72,6 +74,10 @@ const CH = Object.freeze({
   SESSION_SWITCH: 'session:switch',
   SESSION_DELETE: 'session:delete',
   SESSION_RENAME: 'session:rename',
+
+  // 自选股名单（PRD-market §8）：**零出网**，只读本地 skill_kv
+  WATCHLIST_LIST: 'watchlist:list',
+  WATCHLIST_REMOVE: 'watchlist:remove',
 });
 
 /**
@@ -112,6 +118,8 @@ const INVOKE_CHANNELS = Object.freeze([
   CH.SESSION_SWITCH,
   CH.SESSION_DELETE,
   CH.SESSION_RENAME,
+  CH.WATCHLIST_LIST,
+  CH.WATCHLIST_REMOVE,
 ]);
 
 module.exports = { CH, SEND_CHANNELS, RECEIVE_CHANNELS, INVOKE_CHANNELS };

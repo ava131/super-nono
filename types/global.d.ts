@@ -26,6 +26,16 @@ export interface NonoApi {
   sessionDelete(id: string): Promise<unknown>;
   sessionRename(id: string, title: string): Promise<unknown>;
 
+  /**
+   * 自选股名单（PRD-market §8）。
+   *
+   * ⚠️ **零出网**：只读本地 `skill_kv`，不碰任何行情接口。
+   * 所以数据源挂掉、或用户开着飞行模式时，这个方法照样能用。
+   */
+  watchlistList(): Promise<unknown>;
+  /** 删一支。由**用户点按钮**触发（不是模型调用）—— L1.5 不弹框后的"事后纠正"落点。 */
+  watchlistRemove(symbol: string): Promise<unknown>;
+
   onState(fn: (payload: { turnId: string; state: string }) => void): () => void;
   onDelta(fn: (payload: { turnId: string; text: string }) => void): () => void;
   onMessage(fn: (payload: unknown) => void): () => void;

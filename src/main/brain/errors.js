@@ -5,7 +5,17 @@
  * 也保证**错误信息里不会回显 API Key 或请求头**。
  */
 
-/** @typedef {'NETWORK'|'AUTH'|'RATE_LIMIT'|'BUDGET'|'CANCELLED'|'TIMEOUT'|'EGRESS_DENIED'|'SKILL_FAIL'|'LOOP_LIMIT'|'NOT_FOUND'|'INTERNAL'} ErrorCode */
+/**
+ * 全部错误码。
+ *
+ * ⚠️ **新增码时必须同步加进 `MESSAGES`**（`Record<ErrorCode, string>` 会强制这一点）。
+ *
+ * 其中 `BAD_ARGS` / `PERMISSION` / `DENIED` / `FORBIDDEN` 是**技能闸门**产生的码
+ * （见 `src/main/skills/runner.js` 与 `store.js`）——它们原本没被列进来，
+ * 是因为 `runner.fail()` 当时没标注返回类型，漏过了类型检查。现已补齐。
+ *
+ * @typedef {'NETWORK'|'AUTH'|'RATE_LIMIT'|'BUDGET'|'CANCELLED'|'TIMEOUT'|'EGRESS_DENIED'|'SKILL_FAIL'|'LOOP_LIMIT'|'NOT_FOUND'|'INTERNAL'|'BAD_ARGS'|'PERMISSION'|'DENIED'|'FORBIDDEN'} ErrorCode
+ */
 
 export class AppError extends Error {
   /**
@@ -35,6 +45,10 @@ const MESSAGES = /** @type {Record<ErrorCode, string>} */ ({
   LOOP_LIMIT: '我绕了太多圈，先停一下。',
   NOT_FOUND: '找不到这个东西。',
   INTERNAL: '我这出了点问题。',
+  BAD_ARGS: '我没太听懂要查什么，换个说法？',
+  PERMISSION: '这个操作我没被允许做。',
+  DENIED: '好，那就不做了。',
+  FORBIDDEN: '这个操作不能做。',
 });
 
 /**

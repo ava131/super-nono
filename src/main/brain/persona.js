@@ -34,10 +34,22 @@ export function loadPersona() {
 /**
  * 组装系统提示词 —— **这个字符串必须逐字节稳定**。
  *
- * @param {{ name: string, description: string }[]} [skills] 已注册技能（M3 起才会有）
+ * ## 为什么约束块是**参数**而不是在这里查表
+ *
+ * 本文件在 `src/main/brain/` 下（Brain 层），而技能提示词块属于 `skills/`。
+ * 如果这里直接 `import '../../../skills/market/prompts.js'`：
+ *
+ * - 目录深度一改就要跟着改（本轮已经因为相对路径写错两次）
+ * - **层与层糊在一起** —— 新增技能要改 Brain 的代码，违反"加技能只加目录"
+ *
+ * 所以由**注册表**（唯一知道"有哪些技能"的地方）把各技能的提示词块准备好，
+ * 经 `agent.js` 传进来。
+ *
+ * @param {{ name: string, description: string }[]} [skills] 已注册技能
+ * @param {string[]} [skillConstraints] 各技能的追加约束块（顺序与 skills 一致）
  * @returns {string}
  */
-export function stablePrefix(skills = []) {
+export function stablePrefix(skills = [], skillConstraints = []) {
   const persona = loadPersona();
 
   const skillsBlock =
@@ -50,5 +62,8 @@ export function stablePrefix(skills = []) {
           '被问到实时数据时，直接说查不到，不要猜、不要圆。',
         ].join('\n');
 
-  return `${persona}\n\n${skillsBlock}\n`;
+  // 追加技能专用约束：只保留非空块，顺序即 skills 的顺序（保证稳定）
+  const extras = skillConstraints.filter((x) => typeof x === 'string' && x !== '');
+
+  return [persona, skillsBlock, ...extras].join('\n\n') + '\n';
 }

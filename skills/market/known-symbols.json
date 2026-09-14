@@ -1,0 +1,842 @@
+{
+  "_comment": [
+    "内置常用股票表 —— ⚠️ 这是【种子表】，不是完整表。",
+    "",
+    "为什么要单独说明：SDD-market §5.2 的目标是「沪深 300 + 主要指数 ≈ 320 条」，",
+    "但**手写 320 个股票代码是危险的**——一个错的代码会让用户以为在查茅台、",
+    "实际在查另一只票。而错代码从字面上看不出来。",
+    "",
+    "所以本表刻意只收【高置信度】条目：主要指数 + 各行业龙头。",
+    "宁可少，不可错。它降低出网次数，但不是完整覆盖。",
+    "",
+    "## 补全方式（网络可用时）",
+    "用东财搜索端点批量生成完整表，再与本表做去重合并：",
+    "  1. 取沪深 300 成分股清单（东财有现成接口）",
+    "  2. 逐个走搜索端点拿「代码 + 中文名」",
+    "  3. 合并结果写回本文件；本表的条目作为别名补充",
+    "  ⚠️ 生成脚本必须把结果 diff 出来人工过一遍，不要直接覆盖。",
+    "",
+    "## 校验",
+    "test/unit/symbols.test.js 会强制校验：",
+    "  1. code 必须是 6 位数字，且首位与 market 一致（6→SH，0/3→SZ）",
+    "  2. symbol 必须等于 `${code}.${market}`",
+    "  3. 不许有重复的 code / name / alias",
+    "  4. market 必须是 SH 或 SZ（v0 不支持北交所与港美股）"
+  ],
+  "indices": [
+    {
+      "kind": "index",
+      "symbol": "000001.SH",
+      "code": "000001",
+      "market": "SH",
+      "name": "上证指数",
+      "aliases": [
+        "上证综指",
+        "大盘"
+      ]
+    },
+    {
+      "kind": "index",
+      "symbol": "000300.SH",
+      "code": "000300",
+      "market": "SH",
+      "name": "沪深300",
+      "aliases": [
+        "沪深300指数"
+      ]
+    },
+    {
+      "kind": "index",
+      "symbol": "000905.SH",
+      "code": "000905",
+      "market": "SH",
+      "name": "中证500",
+      "aliases": [
+        "中证500指数"
+      ]
+    },
+    {
+      "kind": "index",
+      "symbol": "000016.SH",
+      "code": "000016",
+      "market": "SH",
+      "name": "上证50",
+      "aliases": [
+        "上证50指数"
+      ]
+    },
+    {
+      "kind": "index",
+      "symbol": "399001.SZ",
+      "code": "399001",
+      "market": "SZ",
+      "name": "深证成指",
+      "aliases": [
+        "深成指"
+      ]
+    },
+    {
+      "kind": "index",
+      "symbol": "399006.SZ",
+      "code": "399006",
+      "market": "SZ",
+      "name": "创业板指",
+      "aliases": [
+        "创业板指数"
+      ]
+    }
+  ],
+  "stocks": [
+    {
+      "kind": "stock",
+      "symbol": "600519.SH",
+      "code": "600519",
+      "market": "SH",
+      "name": "贵州茅台",
+      "aliases": [
+        "茅台"
+      ]
+    },
+    {
+      "kind": "stock",
+      "symbol": "000858.SZ",
+      "code": "000858",
+      "market": "SZ",
+      "name": "五粮液"
+    },
+    {
+      "kind": "stock",
+      "symbol": "000568.SZ",
+      "code": "000568",
+      "market": "SZ",
+      "name": "泸州老窖"
+    },
+    {
+      "kind": "stock",
+      "symbol": "600809.SH",
+      "code": "600809",
+      "market": "SH",
+      "name": "山西汾酒"
+    },
+    {
+      "kind": "stock",
+      "symbol": "002304.SZ",
+      "code": "002304",
+      "market": "SZ",
+      "name": "洋河股份"
+    },
+    {
+      "kind": "stock",
+      "symbol": "600887.SH",
+      "code": "600887",
+      "market": "SH",
+      "name": "伊利股份"
+    },
+    {
+      "kind": "stock",
+      "symbol": "603288.SH",
+      "code": "603288",
+      "market": "SH",
+      "name": "海天味业"
+    },
+    {
+      "kind": "stock",
+      "symbol": "000895.SZ",
+      "code": "000895",
+      "market": "SZ",
+      "name": "双汇发展"
+    },
+    {
+      "kind": "stock",
+      "symbol": "601398.SH",
+      "code": "601398",
+      "market": "SH",
+      "name": "工商银行",
+      "aliases": [
+        "工行"
+      ]
+    },
+    {
+      "kind": "stock",
+      "symbol": "601939.SH",
+      "code": "601939",
+      "market": "SH",
+      "name": "建设银行",
+      "aliases": [
+        "建行"
+      ]
+    },
+    {
+      "kind": "stock",
+      "symbol": "601288.SH",
+      "code": "601288",
+      "market": "SH",
+      "name": "农业银行",
+      "aliases": [
+        "农行"
+      ]
+    },
+    {
+      "kind": "stock",
+      "symbol": "601988.SH",
+      "code": "601988",
+      "market": "SH",
+      "name": "中国银行",
+      "aliases": [
+        "中行"
+      ]
+    },
+    {
+      "kind": "stock",
+      "symbol": "600036.SH",
+      "code": "600036",
+      "market": "SH",
+      "name": "招商银行",
+      "aliases": [
+        "招行"
+      ]
+    },
+    {
+      "kind": "stock",
+      "symbol": "601166.SH",
+      "code": "601166",
+      "market": "SH",
+      "name": "兴业银行"
+    },
+    {
+      "kind": "stock",
+      "symbol": "600000.SH",
+      "code": "600000",
+      "market": "SH",
+      "name": "浦发银行"
+    },
+    {
+      "kind": "stock",
+      "symbol": "601318.SH",
+      "code": "601318",
+      "market": "SH",
+      "name": "中国平安",
+      "aliases": [
+        "平安"
+      ]
+    },
+    {
+      "kind": "stock",
+      "symbol": "601628.SH",
+      "code": "601628",
+      "market": "SH",
+      "name": "中国人寿"
+    },
+    {
+      "kind": "stock",
+      "symbol": "600030.SH",
+      "code": "600030",
+      "market": "SH",
+      "name": "中信证券"
+    },
+    {
+      "kind": "stock",
+      "symbol": "300059.SZ",
+      "code": "300059",
+      "market": "SZ",
+      "name": "东方财富"
+    },
+    {
+      "kind": "stock",
+      "symbol": "601857.SH",
+      "code": "601857",
+      "market": "SH",
+      "name": "中国石油",
+      "aliases": [
+        "中石油"
+      ]
+    },
+    {
+      "kind": "stock",
+      "symbol": "600028.SH",
+      "code": "600028",
+      "market": "SH",
+      "name": "中国石化",
+      "aliases": [
+        "中石化"
+      ]
+    },
+    {
+      "kind": "stock",
+      "symbol": "601088.SH",
+      "code": "601088",
+      "market": "SH",
+      "name": "中国神华"
+    },
+    {
+      "kind": "stock",
+      "symbol": "600900.SH",
+      "code": "600900",
+      "market": "SH",
+      "name": "长江电力",
+      "aliases": [
+        "长电"
+      ]
+    },
+    {
+      "kind": "stock",
+      "symbol": "601012.SH",
+      "code": "601012",
+      "market": "SH",
+      "name": "隆基绿能",
+      "aliases": [
+        "隆基股份"
+      ]
+    },
+    {
+      "kind": "stock",
+      "symbol": "300750.SZ",
+      "code": "300750",
+      "market": "SZ",
+      "name": "宁德时代",
+      "aliases": [
+        "宁德"
+      ]
+    },
+    {
+      "kind": "stock",
+      "symbol": "002594.SZ",
+      "code": "002594",
+      "market": "SZ",
+      "name": "比亚迪"
+    },
+    {
+      "kind": "stock",
+      "symbol": "600438.SH",
+      "code": "600438",
+      "market": "SH",
+      "name": "通威股份"
+    },
+    {
+      "kind": "stock",
+      "symbol": "002460.SZ",
+      "code": "002460",
+      "market": "SZ",
+      "name": "赣锋锂业"
+    },
+    {
+      "kind": "stock",
+      "symbol": "000333.SZ",
+      "code": "000333",
+      "market": "SZ",
+      "name": "美的集团",
+      "aliases": [
+        "美的"
+      ]
+    },
+    {
+      "kind": "stock",
+      "symbol": "000651.SZ",
+      "code": "000651",
+      "market": "SZ",
+      "name": "格力电器",
+      "aliases": [
+        "格力"
+      ]
+    },
+    {
+      "kind": "stock",
+      "symbol": "600690.SH",
+      "code": "600690",
+      "market": "SH",
+      "name": "海尔智家",
+      "aliases": [
+        "海尔"
+      ]
+    },
+    {
+      "kind": "stock",
+      "symbol": "600276.SH",
+      "code": "600276",
+      "market": "SH",
+      "name": "恒瑞医药"
+    },
+    {
+      "kind": "stock",
+      "symbol": "300760.SZ",
+      "code": "300760",
+      "market": "SZ",
+      "name": "迈瑞医疗"
+    },
+    {
+      "kind": "stock",
+      "symbol": "603259.SH",
+      "code": "603259",
+      "market": "SH",
+      "name": "药明康德"
+    },
+    {
+      "kind": "stock",
+      "symbol": "300015.SZ",
+      "code": "300015",
+      "market": "SZ",
+      "name": "爱尔眼科"
+    },
+    {
+      "kind": "stock",
+      "symbol": "600196.SH",
+      "code": "600196",
+      "market": "SH",
+      "name": "复星医药"
+    },
+    {
+      "kind": "stock",
+      "symbol": "000538.SZ",
+      "code": "000538",
+      "market": "SZ",
+      "name": "云南白药"
+    },
+    {
+      "kind": "stock",
+      "symbol": "600436.SH",
+      "code": "600436",
+      "market": "SH",
+      "name": "片仔癀"
+    },
+    {
+      "kind": "stock",
+      "symbol": "000002.SZ",
+      "code": "000002",
+      "market": "SZ",
+      "name": "万科A",
+      "aliases": [
+        "万科"
+      ]
+    },
+    {
+      "kind": "stock",
+      "symbol": "600048.SH",
+      "code": "600048",
+      "market": "SH",
+      "name": "保利发展",
+      "aliases": [
+        "保利地产"
+      ]
+    },
+    {
+      "kind": "stock",
+      "symbol": "001979.SZ",
+      "code": "001979",
+      "market": "SZ",
+      "name": "招商蛇口"
+    },
+    {
+      "kind": "stock",
+      "symbol": "600031.SH",
+      "code": "600031",
+      "market": "SH",
+      "name": "三一重工"
+    },
+    {
+      "kind": "stock",
+      "symbol": "000157.SZ",
+      "code": "000157",
+      "market": "SZ",
+      "name": "中联重科"
+    },
+    {
+      "kind": "stock",
+      "symbol": "601766.SH",
+      "code": "601766",
+      "market": "SH",
+      "name": "中国中车"
+    },
+    {
+      "kind": "stock",
+      "symbol": "600585.SH",
+      "code": "600585",
+      "market": "SH",
+      "name": "海螺水泥"
+    },
+    {
+      "kind": "stock",
+      "symbol": "000786.SZ",
+      "code": "000786",
+      "market": "SZ",
+      "name": "北新建材"
+    },
+    {
+      "kind": "stock",
+      "symbol": "600050.SH",
+      "code": "600050",
+      "market": "SH",
+      "name": "中国联通"
+    },
+    {
+      "kind": "stock",
+      "symbol": "601728.SH",
+      "code": "601728",
+      "market": "SH",
+      "name": "中国电信"
+    },
+    {
+      "kind": "stock",
+      "symbol": "600941.SH",
+      "code": "600941",
+      "market": "SH",
+      "name": "中国移动"
+    },
+    {
+      "kind": "stock",
+      "symbol": "002415.SZ",
+      "code": "002415",
+      "market": "SZ",
+      "name": "海康威视"
+    },
+    {
+      "kind": "stock",
+      "symbol": "002230.SZ",
+      "code": "002230",
+      "market": "SZ",
+      "name": "科大讯飞"
+    },
+    {
+      "kind": "stock",
+      "symbol": "002475.SZ",
+      "code": "002475",
+      "market": "SZ",
+      "name": "立讯精密"
+    },
+    {
+      "kind": "stock",
+      "symbol": "000725.SZ",
+      "code": "000725",
+      "market": "SZ",
+      "name": "京东方A",
+      "aliases": [
+        "京东方"
+      ]
+    },
+    {
+      "kind": "stock",
+      "symbol": "603501.SH",
+      "code": "603501",
+      "market": "SH",
+      "name": "韦尔股份"
+    },
+    {
+      "kind": "stock",
+      "symbol": "688981.SH",
+      "code": "688981",
+      "market": "SH",
+      "name": "中芯国际"
+    },
+    {
+      "kind": "stock",
+      "symbol": "000063.SZ",
+      "code": "000063",
+      "market": "SZ",
+      "name": "中兴通讯"
+    },
+    {
+      "kind": "stock",
+      "symbol": "600703.SH",
+      "code": "600703",
+      "market": "SH",
+      "name": "三安光电"
+    },
+    {
+      "kind": "stock",
+      "symbol": "002352.SZ",
+      "code": "002352",
+      "market": "SZ",
+      "name": "顺丰控股",
+      "aliases": [
+        "顺丰"
+      ]
+    },
+    {
+      "kind": "stock",
+      "symbol": "601888.SH",
+      "code": "601888",
+      "market": "SH",
+      "name": "中国中免"
+    },
+    {
+      "kind": "stock",
+      "symbol": "600009.SH",
+      "code": "600009",
+      "market": "SH",
+      "name": "上海机场"
+    },
+    {
+      "kind": "stock",
+      "symbol": "601899.SH",
+      "code": "601899",
+      "market": "SH",
+      "name": "紫金矿业"
+    },
+    {
+      "kind": "stock",
+      "symbol": "603993.SH",
+      "code": "603993",
+      "market": "SH",
+      "name": "洛阳钼业"
+    },
+    {
+      "kind": "stock",
+      "symbol": "600111.SH",
+      "code": "600111",
+      "market": "SH",
+      "name": "北方稀土"
+    },
+    {
+      "kind": "stock",
+      "symbol": "601600.SH",
+      "code": "601600",
+      "market": "SH",
+      "name": "中国铝业"
+    },
+    {
+      "kind": "stock",
+      "symbol": "600019.SH",
+      "code": "600019",
+      "market": "SH",
+      "name": "宝钢股份",
+      "aliases": [
+        "宝钢"
+      ]
+    }
+  ],
+  "funds": [
+    {
+      "kind": "fund",
+      "symbol": "510300.SH",
+      "code": "510300",
+      "market": "SH",
+      "name": "沪深300ETF",
+      "aliases": [
+        "300ETF"
+      ]
+    },
+    {
+      "kind": "fund",
+      "symbol": "510500.SH",
+      "code": "510500",
+      "market": "SH",
+      "name": "中证500ETF",
+      "aliases": [
+        "500ETF"
+      ]
+    },
+    {
+      "kind": "fund",
+      "symbol": "510050.SH",
+      "code": "510050",
+      "market": "SH",
+      "name": "上证50ETF",
+      "aliases": [
+        "50ETF"
+      ]
+    },
+    {
+      "kind": "fund",
+      "symbol": "588000.SH",
+      "code": "588000",
+      "market": "SH",
+      "name": "科创50ETF",
+      "aliases": [
+        "科创板50ETF"
+      ]
+    },
+    {
+      "kind": "fund",
+      "symbol": "512880.SH",
+      "code": "512880",
+      "market": "SH",
+      "name": "证券ETF"
+    },
+    {
+      "kind": "fund",
+      "symbol": "512000.SH",
+      "code": "512000",
+      "market": "SH",
+      "name": "券商ETF"
+    },
+    {
+      "kind": "fund",
+      "symbol": "515000.SH",
+      "code": "515000",
+      "market": "SH",
+      "name": "科技ETF"
+    },
+    {
+      "kind": "fund",
+      "symbol": "512760.SH",
+      "code": "512760",
+      "market": "SH",
+      "name": "半导体ETF",
+      "aliases": [
+        "芯片ETF"
+      ]
+    },
+    {
+      "kind": "fund",
+      "symbol": "515030.SH",
+      "code": "515030",
+      "market": "SH",
+      "name": "新能源车ETF"
+    },
+    {
+      "kind": "fund",
+      "symbol": "512690.SH",
+      "code": "512690",
+      "market": "SH",
+      "name": "酒ETF"
+    },
+    {
+      "kind": "fund",
+      "symbol": "512170.SH",
+      "code": "512170",
+      "market": "SH",
+      "name": "医疗ETF"
+    },
+    {
+      "kind": "fund",
+      "symbol": "510880.SH",
+      "code": "510880",
+      "market": "SH",
+      "name": "红利ETF"
+    },
+    {
+      "kind": "fund",
+      "symbol": "511990.SH",
+      "code": "511990",
+      "market": "SH",
+      "name": "华宝添益",
+      "aliases": [
+        "货币ETF"
+      ]
+    },
+    {
+      "kind": "fund",
+      "symbol": "159915.SZ",
+      "code": "159915",
+      "market": "SZ",
+      "name": "创业板ETF",
+      "aliases": [
+        "创业板"
+      ]
+    },
+    {
+      "kind": "fund",
+      "symbol": "159919.SZ",
+      "code": "159919",
+      "market": "SZ",
+      "name": "沪深300ETF嘉实"
+    },
+    {
+      "kind": "fund",
+      "symbol": "159949.SZ",
+      "code": "159949",
+      "market": "SZ",
+      "name": "创业板50ETF"
+    },
+    {
+      "kind": "fund",
+      "symbol": "159901.SZ",
+      "code": "159901",
+      "market": "SZ",
+      "name": "深证100ETF"
+    },
+    {
+      "kind": "fund",
+      "symbol": "159928.SZ",
+      "code": "159928",
+      "market": "SZ",
+      "name": "消费ETF"
+    },
+    {
+      "kind": "fund",
+      "symbol": "159941.SZ",
+      "code": "159941",
+      "market": "SZ",
+      "name": "纳指ETF"
+    },
+    {
+      "kind": "fund",
+      "symbol": "159920.SZ",
+      "code": "159920",
+      "market": "SZ",
+      "name": "恒生ETF"
+    },
+    {
+      "kind": "fund",
+      "symbol": "512480.SH",
+      "code": "512480",
+      "market": "SH",
+      "name": "半导体ETF国联安"
+    },
+    {
+      "kind": "fund",
+      "symbol": "512660.SH",
+      "code": "512660",
+      "market": "SH",
+      "name": "军工ETF"
+    },
+    {
+      "kind": "fund",
+      "symbol": "512800.SH",
+      "code": "512800",
+      "market": "SH",
+      "name": "银行ETF"
+    },
+    {
+      "kind": "fund",
+      "symbol": "515790.SH",
+      "code": "515790",
+      "market": "SH",
+      "name": "光伏ETF"
+    },
+    {
+      "kind": "fund",
+      "symbol": "516160.SH",
+      "code": "516160",
+      "market": "SH",
+      "name": "新能源ETF"
+    },
+    {
+      "kind": "fund",
+      "symbol": "159825.SZ",
+      "code": "159825",
+      "market": "SZ",
+      "name": "农业ETF"
+    },
+    {
+      "kind": "fund",
+      "symbol": "159611.SZ",
+      "code": "159611",
+      "market": "SZ",
+      "name": "电力ETF"
+    },
+    {
+      "kind": "fund",
+      "symbol": "513050.SH",
+      "code": "513050",
+      "market": "SH",
+      "name": "中概互联网ETF",
+      "aliases": [
+        "中概互联"
+      ]
+    },
+    {
+      "kind": "fund",
+      "symbol": "513100.SH",
+      "code": "513100",
+      "market": "SH",
+      "name": "纳指ETF国泰"
+    },
+    {
+      "kind": "fund",
+      "symbol": "518880.SH",
+      "code": "518880",
+      "market": "SH",
+      "name": "黄金ETF"
+    }
+  ]
+}

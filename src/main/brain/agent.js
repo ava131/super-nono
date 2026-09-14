@@ -69,7 +69,7 @@ export function isTurnRunning() {
  *   | { type: 'error', turnId: string, code: string, message: string }} AgentEvent
  *
  * @typedef {{ apiKey: string, model?: string, dailyCostLimit?: number, overBudget?: boolean }} AgentConfig
- * @typedef {{ toolSpecs?: () => unknown[], runTool?: (name: string, args: unknown, ctx: object) => Promise<{ ok: boolean, summary: string }>, skills?: { name: string, description: string }[] }} AgentTools
+ * @typedef {{ toolSpecs?: () => unknown[], runTool?: (name: string, args: unknown, ctx: object) => Promise<{ ok: boolean, summary: string }>, skills?: { name: string, description: string }[], skillConstraints?: () => string[] }} AgentTools
  */
 
 /**
@@ -138,13 +138,16 @@ async function runRounds({ turnId, text, emit, config, tools, signal, requestCon
   memory.appendMessage({ turnId, role: 'user', content: text });
 
   const skillList = tools.skills ?? [];
+  // 技能专用的提示词约束块（如行情技能的"禁止给买卖建议"），
+  // 由注册表按技能名提供 —— 两者都在每次请求里逐字节相同，前缀缓存不受影响
+  const skillConstraints = tools.skillConstraints ? tools.skillConstraints() : [];
   const toolSpecs = tools.toolSpecs ? tools.toolSpecs() : [];
   const usedSkills = new Set();
 
   // ★ 工具调用的中间上下文只活在**本次请求**里，不落库
   /** @type {{ role: string, content: string | null, tool_call_id?: string, tool_calls?: unknown[] }[]} */
   const messages = [
-    { role: 'system', content: stablePrefix(skillList) },
+    { role: 'system', content: stablePrefix(skillList, skillConstraints) },
     ...memory.recentMessages(),
   ];
 

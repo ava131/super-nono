@@ -15,3 +15,6 @@ userdata/
 
 # Chromium / Electron 的运行时残留（某些启动方式下会落在项目目录）
 Singleton*
+
+# 调试时用 --user-data-dir 指到项目内的临时数据目录（不要提交）
+.smoke-data/
