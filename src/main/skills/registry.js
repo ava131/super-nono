@@ -14,6 +14,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { githubIssuesSystemBlock } from '../../../skills/github_issues/prompts.js';
 import { marketSystemBlock } from '../../../skills/market/prompts.js';
 import log from '../log.js';
 import * as egress from './egress.js';
@@ -200,6 +201,9 @@ export function describeConstraints(skills) {
  */
 const SKILL_PROMPT_BLOCKS = {
   market: () => marketSystemBlock(),
+  // `github_issues` 需要两条 description 装不下的约束（description 有 200 字硬上限）：
+  //   ① 只呈现不分析（PRD §2）  ② issue 标题是外部不可信文本（防提示注入）
+  github_issues: () => githubIssuesSystemBlock(),
 };
 
 /** @returns {string[]} */

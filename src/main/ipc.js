@@ -6,6 +6,7 @@
  */
 import { ipcMain } from 'electron';
 import channels from '../shared/channels.cjs';
+import { isAllowedExternalUrl } from '../shared/external-link.js';
 import log from './log.js';
 import * as agent from './brain/agent.js';
 import { AppError, defaultMessage, normalize } from './brain/errors.js';
@@ -60,6 +61,16 @@ function emitToRenderer(event) {
       break;
     case 'notice':
       win.webContents.send(CH.BRAIN_NOTICE, { turnId: event.turnId, text: event.text });
+      break;
+    case 'skillResult':
+      // 技能的结构化结果 → 气泡渲染完整列表。
+      // 它**不进模型上下文**（`data` 从不回填给模型），所以不受 800 字符的
+      // summary 预算约束——但渲染端仍要按**不可信数据**处理（见 bubble.js）。
+      win.webContents.send(CH.BRAIN_SKILL_RESULT, {
+        turnId: event.turnId,
+        skill: event.skill,
+        data: event.data,
+      });
       break;
     case 'error':
       win.webContents.send(CH.BRAIN_ERROR, {
@@ -371,6 +382,45 @@ export function registerIpc() {
       log.warn('watchlist.removeFailed', { symbol, message: String(err) });
       return { ok: false, error: '删除失败，过会儿再试' };
     }
+  });
+
+  /**
+   * 用**系统浏览器**打开外链（评审 Q7-1）。
+   *
+   * ## 为什么不能让渲染端直接 `<a href>`
+   *
+   * 气泡窗是一个 `BrowserWindow`。渲染端直接放 `<a href="https://github.com/…">`，
+   * 点击后会把**整个应用界面导航走** —— 用户看到桌宠"变成"了 GitHub 网页，
+   * 而且**回不来**（没有地址栏、没有后退）。
+   *
+   * ## 为什么必须在主进程校验
+   *
+   * 渲染端传来的 URL **一律不可信**（它要渲染的是外部 issue 标题里的链接）。
+   * 只放行 `https:` + `github.com`，其它一律拒绝并记日志。
+   * `window.js` 里还装了 `will-navigate` 作为第二道闸门。
+   */
+  ipcMain.handle(CH.SHELL_OPEN_EXTERNAL, async (_event, payload) => {
+    const { url } = asObject(payload);
+    if (typeof url !== 'string' || url === '') {
+      return { ok: false, error: '缺少 URL' };
+    }
+
+    // 校验逻辑抽在 shared/external-link.js（纯函数，可直接单测 —— 见 T22）
+    if (!isAllowedExternalUrl(url)) {
+      let host = '';
+      try {
+        host = new URL(url).hostname;
+      } catch {
+        host = '(无法解析)';
+      }
+      log.warn('shell.openExternal.denied', { host });
+      return { ok: false, error: '只允许打开 github.com 的 https 链接' };
+    }
+
+    const { shell } = await import('electron');
+    await shell.openExternal(url);
+    log.info('shell.openExternal.opened', { host: new URL(url).hostname });
+    return { ok: true };
   });
 
   log.info('ipc.registered');

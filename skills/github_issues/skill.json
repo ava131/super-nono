@@ -1,0 +1,36 @@
+{
+  "name": "github_issues",
+  "version": "0.1.0",
+  "description": "查询某技术领域核心项目最近有更新的 GitHub issue（只读）。用户想跟踪某领域动态、问「XX 最近有什么新问题」时使用。领域不明确就直接调用本技能（不带参数），它会返回可选领域，你再反问用户想看哪个。只转述返回的事实与网址，不得推断趋势、不得描述 issue 正文。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "domain": {
+        "type": "string",
+        "description": "领域名，如 ai infra / 推理框架 / llm serving。未收录时本技能会返回可选的领域清单"
+      },
+      "repos": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "可选：直接指定 owner/repo 数组（如 [\"vllm-project/vllm\"]），绕过领域表。最多 5 个。与 domain 同时给出时以 repos 为准"
+      },
+      "windowDays": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 30,
+        "description": "只看最近 N 天内更新过的 issue，默认 7"
+      },
+      "limit": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 5,
+        "description": "返回条数，默认 5。上限 5 是因为给模型看的 summary 只有 800 字符"
+      }
+    }
+  },
+  "permissions": ["network:github_issues", "db:cache"],
+  "networkHosts": ["api.github.com"],
+  "risk": "read_only",
+  "requiresConfirmation": false,
+  "timeoutMs": 15000
+}

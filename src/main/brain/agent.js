@@ -66,6 +66,7 @@ export function isTurnRunning() {
  *   | { type: 'delta', turnId: string, text: string }
  *   | { type: 'message', turnId: string, role: string, text: string, done: boolean }
  *   | { type: 'notice', turnId: string, text: string }
+ *   | { type: 'skillResult', turnId: string, skill: string, data: unknown }
  *   | { type: 'error', turnId: string, code: string, message: string }} AgentEvent
  *
  * @typedef {{ apiKey: string, model?: string, dailyCostLimit?: number, overBudget?: boolean }} AgentConfig
@@ -237,6 +238,13 @@ async function runRounds({ turnId, text, emit, config, tools, signal, requestCon
 
       // ★ 只把 summary 回填给模型，不回填整个 data（B-6d：防止上下文被撑爆）
       messages.push({ role: 'tool', tool_call_id: call.id, content: result.summary });
+
+      // `data` 走**另一条路**给渲染端（气泡展示完整列表），**不进模型上下文**。
+      // 这样"模型只叙述 5 条"与"气泡展示 20 条"可以同时成立——
+      // summary 的 800 字符预算只约束前者。
+      if (result.ok && /** @type {any} */ (result).data !== undefined) {
+        emit({ type: 'skillResult', turnId, skill: call.name, data: /** @type {any} */ (result).data });
+      }
     }
   }
 

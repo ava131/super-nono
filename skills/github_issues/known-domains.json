@@ -1,0 +1,37 @@
+{
+  "_note": "领域 → 种子仓库（种子表）。repos 必须**人工选定**：实测 vllm-ascend 仅 2825 stars 却有 3267 个未关 issue，按 star 自动筛是错的方法。aliases 是这张表的全部价值——中文说「推理框架」、英文说「LLM serving」，必须指向同一组仓库。",
+  "_whyLocalTable": "不用 GitHub 的 topic: 搜索做第一段，因为实测它会**静默返回垃圾**：topic:ai-infra 的 top 是无人知晓的项目，topic:inference-engine 的 top 是博客笔记仓库，而拼错的 topic **不报错**。详见 docs/issues/PRD-issues-v0.md §4.1。",
+  "_whyExcludeLabels": "自动化噪声只能靠 label 精确排除。实测 author:app/dependabot 等手段**无效**——CI 自动化跑在 type=User 的普通账号上，API 无字段可区分（PRD §7.7）。",
+  "_updatedAt": "2026-09-14",
+  "domains": [
+    {
+      "id": "ai-infra",
+      "label": "AI Infra / 大模型推理基础设施",
+      "aliases": [
+        "ai infra",
+        "ai基础设施",
+        "ai 基础设施",
+        "推理框架",
+        "大模型推理",
+        "大模型推理框架",
+        "llm serving",
+        "llm inference",
+        "推理加速",
+        "推理引擎"
+      ],
+      "repos": [
+        "vllm-project/vllm",
+        "sgl-project/sglang",
+        "vllm-project/vllm-ascend"
+      ],
+      "repoAliases": {
+        "vllm": "vllm-project/vllm",
+        "sglang": "sgl-project/sglang",
+        "vllm-ascend": "vllm-project/vllm-ascend"
+      },
+      "excludeLabels": [
+        "ci-failure-tracker"
+      ]
+    }
+  ]
+}

@@ -112,6 +112,9 @@ refuses to save** — it never silently falls back to plaintext.
 | `茅台现在什么状态` | Calls `market`, returns a factual "status report" |
 | `把宁德时代加进自选` | Adds to watchlist **without a confirmation dialog** |
 | `我自选股都怎么样了` | Batch-scans your whole watchlist |
+| `帮我找一下 vllm 最新的 issue` | Resolves the repo short name locally, **one request**, then renders a clickable list |
+| `AI infra 最近有什么新问题` | Resolves a whole domain to 3 repos; **refuses to guess** if the domain is unknown |
+| *(a domain it doesn't know)* | Says so and **lists what it does know** — 0 network requests |
 | `宇树科技` | Resolves a newly-listed stock **by name** via search |
 | `516350` | Works for ETFs too (code goes straight through) |
 | `帮我查一下火星的天气` | Clearly says it cannot find it — **never makes it up** |
@@ -154,6 +157,7 @@ v0 ships three:
 | `weather` | Open-Meteo (primary) + wttr.in (fallback), **no API key needed** | L1 read-only |
 | `market` | A-share quotes, indicators, historical percentiles, watchlist scan | L1 read-only |
 | `watchlist` | Add / remove / list your watchlist | **L1.5 — runs without a confirmation dialog** |
+| `github_issues` | Recent **actively-discussed** issues in a domain (vLLM / SGLang / …), rendered as a clickable list | L1 read-only |
 
 Each skill is a self-contained directory with a declarative manifest:
 
@@ -306,11 +310,12 @@ super-nono/
 ├── skills/
 │   ├── weather/             weather skill
 │   ├── market/              quotes, indicators, sources, symbol resolution, guardrails
-│   └── watchlist/           watchlist skill (L1.5)
+│   ├── watchlist/           watchlist skill (L1.5)
+│   └── github_issues/       domain → issue list (local domain table, no guessing)
 ├── shared/limits.js         single source of truth for cross-module contract constants
 ├── assets/persona.md        persona prompt (editable)
 ├── config/pricing.json      DeepSeek price table (for cost estimation)
-├── test/                    455 unit + integration cases, plus fixtures and mocks
+├── test/                    537 unit + integration cases, plus fixtures and mocks
 ├── scripts/                 Electron installer, skill CLI, Eastmoney capture probe
 └── docs/                    PRDs, SDDs, review records, retrospectives
 ```
@@ -341,7 +346,7 @@ icon and pixel art are generated in code.
 | `pnpm dev` | Start with Chromium logging |
 | `pnpm smoke` | **Self-check and exit**: window/always-on-top/focus/`setPosition`/click-through/tray/Dock, prints PASS/FAIL |
 | `pnpm check` | TypeScript static check (`checkJs`, no build output) |
-| `pnpm test` | Unit + integration tests (**455 cases**) |
+| `pnpm test` | Unit + integration tests (**537 cases**) |
 | `pnpm skill:list` | List skills, permission union, host allowlist (auditable) |
 | `pnpm skill:test` | Call one skill directly, bypassing the model |
 | `pnpm market:capture` | Capture one real Eastmoney response into a test fixture |
@@ -392,6 +397,9 @@ fall apart) get their own documents:
 | [SDD · Market](docs/market/SDD-market-v0.md) | Source selection, price adjustment, caching, degradation, module mapping |
 | [Implementation status](docs/market/IMPLEMENTATION-STATUS.md) | Round-by-round record: decisions, measurements, corrections |
 | [Retrospective](docs/market/RETROSPECTIVE-v0.md) | What was built, what broke, what I got wrong, what to do differently |
+| [PRD · Issues](docs/issues/PRD-issues-v0.md) | Domain issue tracking: capability boundary, local domain table, the 800-char budget, quota discipline |
+| [SDD · Issues](docs/issues/SDD-issues-v0.md) | Query assembly, cache-key rules, cross-layer wiring for the clickable list |
+| [Review · Issues](docs/issues/v0-review-20260916-1904.md) | Adversarial review: 6 A-level findings, 8 decisions, measured limits |
 
 Market's value proposition is a **"status report", not a "trading signal"** — it explains
 *what state something is in* (with objective percentiles) and **makes no predictions**.

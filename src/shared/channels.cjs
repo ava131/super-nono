@@ -29,6 +29,8 @@
  * @property {string} BRAIN_NOTICE
  * @property {string} BRAIN_ERROR
  * @property {string} BRAIN_CONFIRM_REQUEST
+ * @property {string} BRAIN_SKILL_RESULT
+ * @property {string} SHELL_OPEN_EXTERNAL
  * @property {string} DEBUG_METRICS
  * @property {string} SETTINGS_GET
  * @property {string} SETTINGS_SET
@@ -63,6 +65,9 @@ const CH = Object.freeze({
   BRAIN_NOTICE: 'brain:notice',
   BRAIN_ERROR: 'brain:error',
   BRAIN_CONFIRM_REQUEST: 'brain:confirmRequest',
+  // 技能的结构化结果（`data`）—— 它**不进模型上下文**，只给气泡渲染完整列表用。
+  // agent.js 只把 summary 回填给模型；data 从这里单独走一条路到渲染端。
+  BRAIN_SKILL_RESULT: 'brain:skillResult',
   DEBUG_METRICS: 'debug:metrics',
 
   // ── invoke（请求/响应）─────────────────────────────────────────
@@ -78,6 +83,11 @@ const CH = Object.freeze({
   // 自选股名单（PRD-market §8）：**零出网**，只读本地 skill_kv
   WATCHLIST_LIST: 'watchlist:list',
   WATCHLIST_REMOVE: 'watchlist:remove',
+
+  // 用系统浏览器打开外链（评审 Q7-1）。
+  // ⚠️ 必须是 invoke + 主进程校验：气泡窗是个 BrowserWindow，
+  // 直接放 `<a href>` 点击会把**整个应用界面导航走**（用户看到 app"变成"了网页且回不来）。
+  SHELL_OPEN_EXTERNAL: 'shell:openExternal',
 });
 
 /**
@@ -106,6 +116,7 @@ const RECEIVE_CHANNELS = Object.freeze([
   CH.BRAIN_NOTICE,
   CH.BRAIN_ERROR,
   CH.BRAIN_CONFIRM_REQUEST,
+  CH.BRAIN_SKILL_RESULT,
   CH.DEBUG_METRICS,
 ]);
 
@@ -120,6 +131,7 @@ const INVOKE_CHANNELS = Object.freeze([
   CH.SESSION_RENAME,
   CH.WATCHLIST_LIST,
   CH.WATCHLIST_REMOVE,
+  CH.SHELL_OPEN_EXTERNAL,
 ]);
 
 module.exports = { CH, SEND_CHANNELS, RECEIVE_CHANNELS, INVOKE_CHANNELS };

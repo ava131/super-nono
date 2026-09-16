@@ -112,6 +112,85 @@ function scrollToBottom() {
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
+/**
+ * 渲染技能的结构化结果（评审 Q7）。
+ *
+ * ## 为什么这条路和 `appendMessage` 不一样
+ *
+ * `summary` 只有 800 字符（模型可见），而 `data.items` 是**全量**（最多 `DISPLAY_COUNT` 条）。
+ * 所以气泡能列出模型**没叙述到**的那些条 —— 这是"模型说 5 条、气泡给 10 条"的落点。
+ *
+ * ## 两条硬纪律
+ *
+ * 1. **一律 `textContent`，绝不 `innerHTML`**（评审 Q7-2 / B6）。
+ *    `it.title` 是**任何人可以改的 GitHub issue 标题**——用 `innerHTML` 就是
+ *    把一个 XSS/注入面直接装进应用。文件里有断言测试盯着这一点。
+ * 2. **外链走 `api.openExternal`，绝不 `<a href>`**（评审 Q7-1）。
+ *    气泡是 `frame: false` 的 BrowserWindow，直接跳转会把整个界面导航走且回不来。
+ *
+ * @param {unknown} payload
+ */
+function renderSkillResult(payload) {
+  const p = /** @type {{ turnId?: string, skill?: string, data?: any }} */ (payload ?? {});
+  // 目前只有 github_issues 产出的 data 是"可点击列表"这个形状
+  if (p.skill !== 'github_issues') return;
+
+  const items = Array.isArray(p.data?.items) ? p.data.items : [];
+  if (items.length === 0) return;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'msg assistant';
+
+  const card = document.createElement('div');
+  card.className = 'bubble skill-list';
+
+  const total = Number.isFinite(p.data?.total) ? p.data.total : items.length;
+  const head = document.createElement('div');
+  head.className = 'skill-list-head';
+  head.textContent =
+    total > items.length
+      ? `共 ${total} 条匹配，这里展示最新的 ${items.length} 条`
+      : `共 ${items.length} 条`;
+  card.appendChild(head);
+
+  for (const it of items) {
+    const row = document.createElement('div');
+    row.className = 'issue-row';
+
+    const num = document.createElement('span');
+    num.className = 'issue-num';
+    num.textContent = `${it?.repo ?? ''}#${it?.number ?? '?'}`;
+    row.appendChild(num);
+
+    const title = document.createElement('span');
+    title.className = 'issue-title';
+    // ★ textContent：标题是外部不可信文本，绝不能当 HTML 解析
+    title.textContent = String(it?.title ?? '');
+    row.appendChild(title);
+
+    const meta = document.createElement('span');
+    meta.className = 'issue-meta';
+    const comments = Number.isFinite(it?.comments) ? it.comments : 0;
+    meta.textContent = `c:${comments}`;
+    row.appendChild(meta);
+
+    const url = typeof it?.url === 'string' ? it.url : '';
+    // 只让**明确是 github.com 的 https 链接**可点（主进程还会再校验一次）
+    if (/^https:\/\/github\.com\//.test(url)) {
+      row.classList.add('clickable');
+      row.title = url;
+      row.addEventListener('click', () => {
+        void window.api.openExternal(url);
+      });
+    }
+    card.appendChild(row);
+  }
+
+  wrap.appendChild(card);
+  messagesEl.appendChild(wrap);
+  scrollToBottom();
+}
+
 function resetStreamState() {
   activeTurnId = null;
   expectNewTurn = false;
@@ -619,6 +698,10 @@ api.onNotice((payload) => {
 
 api.onConfirmRequest((payload) => {
   showConfirmRequest(payload);
+});
+
+api.onSkillResult((payload) => {
+  renderSkillResult(payload);
 });
 
 api.onError((payload) => {

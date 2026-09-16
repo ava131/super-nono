@@ -575,3 +575,63 @@ select.input {
 .watchlist .session-row {
   cursor: default; /* 整行不可点：这一行没有"切换"语义，只有右侧的删除 */
 }
+
+/* ── 技能结构化结果：issue 列表（评审 Q7）─────────────────────────
+   这条列表**不走模型上下文**（data 从 agent 直接 emit 到渲染端），
+   所以它可以比 summary 的 800 字符预算长。
+   标题是外部不可信文本 —— 渲染端只用 textContent，这里不做任何 HTML 解析。 */
+.skill-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 100%;
+  font-size: 12px;
+}
+
+.skill-list-head {
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.issue-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+}
+
+/* 只有 https://github.com/ 的链接才加这个类（主进程还会再校验一次） */
+.issue-row.clickable {
+  cursor: pointer;
+}
+
+.issue-row.clickable:hover {
+  border-color: var(--accent-dim);
+  background: var(--line);
+}
+
+.issue-num {
+  color: var(--accent);
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+.issue-title {
+  flex: 1;
+  color: var(--text);
+  /* 标题可能很长：最多两行，超出省略 */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.issue-meta {
+  color: var(--text-dim);
+  white-space: nowrap;
+  font-size: 11px;
+}

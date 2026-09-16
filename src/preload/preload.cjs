@@ -95,7 +95,9 @@ function subscribe(channel, handler) {
  * @property {(fn: (payload: any) => void) => () => void} onNotice
  * @property {(fn: (payload: any) => void) => () => void} onError
  * @property {(fn: (payload: any) => void) => () => void} onConfirmRequest
+ * @property {(fn: (payload: any) => void) => () => void} onSkillResult
  * @property {(fn: (payload: any) => void) => () => void} onMetrics
+ * @property {(url: string) => Promise<unknown>} openExternal
  */
 
 /** @type {NonoApi} */
@@ -132,7 +134,11 @@ const api = {
   onNotice: (fn) => subscribe(CH.BRAIN_NOTICE, fn),
   onError: (fn) => subscribe(CH.BRAIN_ERROR, fn),
   onConfirmRequest: (fn) => subscribe(CH.BRAIN_CONFIRM_REQUEST, fn),
+  onSkillResult: (fn) => subscribe(CH.BRAIN_SKILL_RESULT, fn),
   onMetrics: (fn) => subscribe(CH.DEBUG_METRICS, fn),
+
+  // ── 外链：必须走主进程校验（评审 Q7-1），渲染端直接跳转会把整个界面导航走
+  openExternal: (url) => invoke(CH.SHELL_OPEN_EXTERNAL, { url }),
 };
 
 contextBridge.exposeInMainWorld('api', api);

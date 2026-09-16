@@ -237,6 +237,31 @@ export function createBubbleWindow() {
 
   bubbleWindow.loadFile(path.join(__dirname, '../renderer/bubble.html'));
 
+  /**
+   * 导航护栏（评审 Q7-1）——**第二道闸门**。
+   *
+   * 第一道是 `ipc.js` 的 `shell:openExternal`（校验 `https:` + `github.com`）。
+   * 这里兜底：气泡要渲染 issue 标题里的链接，一旦哪里漏了直接 `<a href>`，
+   * 主进程必须**拒绝**而不是跟着导航走。
+   *
+   * 为什么必须拒绝：这是个 `frame: false` 的窗口，没有地址栏也没有后退，
+   * 一旦被导航走，用户看到的是"桌宠变成了一个网页"，而且**回不来**。
+   */
+  bubbleWindow.webContents.on('will-navigate', (event, url) => {
+    // 只允许加载自己的本地页面（bubble.html）
+    if (!url.startsWith('file://')) {
+      event.preventDefault();
+      log.warn('bubbleWindow.navigationBlocked', { url });
+    }
+  });
+
+  // 同样的理由：`window.open` / `target=_blank` 一律不开新窗口，
+  // 外链只能走 ipc 的 shell:openExternal
+  bubbleWindow.webContents.setWindowOpenHandler(({ url }) => {
+    log.warn('bubbleWindow.windowOpenBlocked', { url });
+    return { action: 'deny' };
+  });
+
   bubbleWindow.on('closed', () => {
     bubbleWindow = null;
   });
