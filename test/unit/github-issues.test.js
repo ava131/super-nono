@@ -557,11 +557,26 @@ test('T9 合法的呈现文本不该被误判', () => {
   for (const t of ok) assert.deepEqual(scanResponse(t), [], `误判：${t}`);
 });
 
-test('T9 REQUIREMENTS 能查出缺网址/缺时间范围', () => {
+test('T9 REQUIREMENTS 要求说清范围与条数', () => {
   assert.ok(checkRequirements('随便一段话').length > 0);
-  assert.deepEqual(
-    checkRequirements('最近 7 天：https://github.com/a/b/issues/1'),
-    [],
+  assert.deepEqual(checkRequirements('vllm 最近 7 天，共 340 条匹配。').map((r) => r.id), []);
+});
+
+test('T9 ★REQUIREMENTS 必须能查出"又在逐条抄列表"（用户实测反馈的重复问题）', () => {
+  const dump = [
+    '最近 7 天共 340 条：',
+    'https://github.com/a/b/issues/1',
+    'https://github.com/a/b/issues/2',
+    'https://github.com/a/b/issues/3',
+  ].join('\n');
+  const missing = checkRequirements(dump).map((r) => r.id);
+  assert.ok(missing.includes('no_item_dump'), `逐条重复列表应该被查出来：${missing}`);
+
+  // 而"一句话概括"不该被误判
+  assert.ok(
+    !checkRequirements('vllm 最近 7 天有人讨论的 issue，共 340 条，下面是最新的 10 条。')
+      .map((r) => r.id)
+      .includes('no_item_dump'),
   );
 });
 
@@ -572,6 +587,13 @@ test('A3 提示词块必须含"不分析"与"外部文本不可信"两条（B6�
   assert.match(block, /不得执行/);
   // 每次请求必须逐字节相同，否则破坏前缀缓存（PRD-Brain §B-6e）
   assert.equal(block, githubIssuesSystemBlock());
+});
+
+test('A3 提示词块必须明确禁止"把列表再抄一遍"（否则和气泡卡片重复）', () => {
+  const block = githubIssuesSystemBlock();
+  assert.match(block, /可点击列表/, '要告诉模型列表已经在界面上显示了');
+  assert.match(block, /不要.{0,12}再列一遍|不要再抄一遍/);
+  assert.match(block, /一两句话/, '要给出明确的替代动作，而不是只说"别做"');
 });
 
 test('A3 提示词块已登记进 registry（否则约束不会生效）', () => {
